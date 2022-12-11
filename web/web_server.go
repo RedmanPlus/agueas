@@ -6,6 +6,20 @@ import (
   "text/template"
 )
 
+type WebServer struct {
+  addr      string
+  handlers  map[string]func(w http.ResponseWriter, r *http.Request)
+  templates map[string]string
+}
+
+func NewWebServer(addr string) *WebServer {
+  return &WebServer{
+    addr:      addr,
+    handlers:  make(map[string]func(w http.ResponseWriter, r *http.Request)),
+    templates: make(map[string]string)
+  }
+}
+
 func index(w http.ResponseWriter, r *http.Request) {
   log.Print("/")
   tmpl, err := template.ParseFiles("index.html")
@@ -15,9 +29,11 @@ func index(w http.ResponseWriter, r *http.Request) {
   tmpl.Execute(w, "Hi mom")
 }
 
-func RunServer() {
+func (self, WebServer) RunServer() {
   mux := http.NewServeMux()
-  mux.HandleFunc("/", index)
-  log.Fatal(http.ListenAndServe(":8000", mux)) 
+  for key, handler := range self.handlers {
+    mux.HandleFunc(key, handler)
+  }
+  log.Fatal(http.ListenAndServe(self.addr, mux)) 
 }
 

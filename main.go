@@ -5,5 +5,6 @@ import (
 )
 
 func main() {
-  log_input.InputLoop()
+  inputLayer := log_input.NewInputLayer("tcp", ":4510")
+  inputLayer.InputLoop()
 }
