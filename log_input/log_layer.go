@@ -10,6 +10,7 @@ import (
 type InputLayer struct {
   connType string
   tcpPort  string
+  Results  []chan map[string]string
 }
 
 func NewInputLayer(connType string, tcpPort string) *InputLayer {
@@ -38,26 +39,30 @@ func (self InputLayer) InputLoop() {
     if err != nil {
       log.Fatal(err)
     }
-    go handleConnection(conn)
+    go self.handleConnection(conn)
   }
 }
 
-func handleConnection(conn net.Conn) {
+func (self InputLayer) handleConnection(conn net.Conn) {
   buffer := make([]byte, 1024)
   _, err := conn.Read(buffer)
   if err != nil {
     log.Fatal(err)
   }
-  go handleLog(buffer)
   conn.Close()
+  
+  vessel := make(chan map[string]string)
+  self.Results = append(self.Results, vessel)
+  go handleLog(buffer, vessel)
 }
 
-func handleLog(input []byte) {
+func handleLog(input []byte, vessel chan map[string]string) {
   if msgInterface, err := pickle.Loads(string(input[4:])); err != nil {
     log.Fatal(err)
   } else {
     decodedMsg := msgInterface.(*types.Dict)
-    DictDecoder{}.Decode(*decodedMsg)
+    result := DictDecoder{}.Decode(*decodedMsg)
+    vessel <- result
   } 
 }
 
